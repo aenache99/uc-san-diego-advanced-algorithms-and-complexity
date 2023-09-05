@@ -8,36 +8,52 @@ class StockCharts:
     def write_response(self, result):
         print(result)
 
-    def min_charts(self, stock_data):
-        # Replace this incorrect greedy algorithm with an
-        # algorithm that correctly finds the minimum number
-        # of charts on which we can put all the stock data
-        # without intersections of graphs on one chart.
+    def can_place_above(self, stock1, stock2):
+        # Check if stock1 can be placed above stock2 without intersecting
+        return all(x > y for x, y in zip(stock1, stock2))
+
+    def build_bipartite_graph(self, stock_data):
         n = len(stock_data)
-        k = len(stock_data[0])
-        charts = []
-        for new_stock in stock_data:
-            added = False
-            for chart in charts:
-                fits = True
-                for stock in chart:
-                    above = all([x > y for x, y in zip(new_stock, stock)])
-                    below = all([x < y for x, y in zip(new_stock, stock)])
-                    if (not above) and (not below):
-                        fits = False
-                        break
-                if fits:
-                    added = True
-                    chart.append(new_stock)
-                    break
-            if not added:
-                charts.append([new_stock])
-        return len(charts)
+        m = len(stock_data[0])
+        graph = [[False] * n for _ in range(n)]
+
+        for i in range(n):
+            for j in range(n):
+                if self.can_place_above(stock_data[i], stock_data[j]):
+                    graph[i][j] = True
+
+        return graph
+
+    def max_bipartite_matching(self, graph):
+        n = len(graph)
+        m = len(graph[0])
+        matching = [-1] * m
+        visited = [False] * n
+
+        def dfs(u):
+            visited[u] = True
+            for v in range(m):
+                if graph[u][v] and (matching[v] == -1 or (not visited[matching[v]] and dfs(matching[v]))):
+                    matching[v] = u
+                    return True
+            return False
+
+        for u in range(n):
+            visited = [False] * n
+            dfs(u)
+
+        return matching.count(-1)
+
+    def min_charts(self, stock_data):
+        graph = self.build_bipartite_graph(stock_data)
+        max_matching = self.max_bipartite_matching(graph)
+        return max_matching
 
     def solve(self):
         stock_data = self.read_data()
         result = self.min_charts(stock_data)
         self.write_response(result)
+
 
 if __name__ == '__main__':
     stock_charts = StockCharts()

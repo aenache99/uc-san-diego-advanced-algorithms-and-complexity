@@ -1,74 +1,84 @@
 # python3
 
+
 EPS = 1e-6
-PRECISION = 20
+PRECISION = 6
+
 
 class Equation:
     def __init__(self, a, b):
         self.a = a
         self.b = b
 
-class Position:
-    def __init__(self, column, row):
-        self.column = column
-        self.row = row
 
-def ReadEquation():
+class Position:
+    def __init__(self, row, col):
+        self.row = row
+        self.col = col
+
+
+def ReadData():
     size = int(input())
     a = []
     b = []
-    for row in range(size):
+    for _ in range(size):
         line = list(map(float, input().split()))
         a.append(line[:size])
         b.append(line[size])
     return Equation(a, b)
 
-def SelectPivotElement(a, used_rows, used_columns):
-    # This algorithm selects the first free element.
-    # You'll need to improve it to pass the problem.
-    pivot_element = Position(0, 0)
-    while used_rows[pivot_element.row]:
-        pivot_element.row += 1
-    while used_columns[pivot_element.column]:
-        pivot_element.column += 1
-    return pivot_element
 
-def SwapLines(a, b, used_rows, pivot_element):
-    a[pivot_element.column], a[pivot_element.row] = a[pivot_element.row], a[pivot_element.column]
-    b[pivot_element.column], b[pivot_element.row] = b[pivot_element.row], b[pivot_element.column]
-    used_rows[pivot_element.column], used_rows[pivot_element.row] = used_rows[pivot_element.row], used_rows[pivot_element.column]
-    pivot_element.row = pivot_element.column;
+def SelectPivotElement(pivot, a, used_rows):
+    while used_rows[pivot.row] or a[pivot.row][pivot.col] == 0:
+        pivot.row += 1
+    return pivot
 
-def ProcessPivotElement(a, b, pivot_element):
-    # Write your code here
-    pass
 
-def MarkPivotElementUsed(pivot_element, used_rows, used_columns):
-    used_rows[pivot_element.row] = True
-    used_columns[pivot_element.column] = True
+# swap row to top of non-pivot rows
+def SwapLines(a, b, used_rows, pivot):
+    a[pivot.col], a[pivot.row] = a[pivot.row], a[pivot.col]
+    b[pivot.col], b[pivot.row] = b[pivot.row], b[pivot.col]
+    used_rows[pivot.col], used_rows[pivot.row] = used_rows[pivot.row], used_rows[pivot.col]
+    pivot.row = pivot.col
+
+
+def ProcessPivotElement(a, b, pivot, used_rows):
+    scale = a[pivot.row][pivot.col]
+    if scale != 1:
+        for i in range(len(a)):
+            a[pivot.row][i] /= scale
+        b[pivot.row] /= scale
+    for i in range(len(a)):
+        if i != pivot.row:
+            multiple = a[i][pivot.col]
+            for j in range(len(a)):
+                a[i][j] -= a[pivot.row][j] * multiple
+            b[i] -= b[pivot.row] * multiple
+    used_rows[pivot.row] = True
+
 
 def SolveEquation(equation):
     a = equation.a
     b = equation.b
     size = len(a)
-
-    used_columns = [False] * size
     used_rows = [False] * size
-    for step in range(size):
-        pivot_element = SelectPivotElement(a, used_rows, used_columns)
-        SwapLines(a, b, used_rows, pivot_element)
-        ProcessPivotElement(a, b, pivot_element)
-        MarkPivotElementUsed(pivot_element, used_rows, used_columns)
-
+    for i in range(size):
+        pivot = Position(0, i)
+        pivot = SelectPivotElement(pivot, a, used_rows)
+        # print(pivot.row, pivot.col)
+        SwapLines(a, b, used_rows, pivot)
+        ProcessPivotElement(a, b, pivot, used_rows)
+        # print(a, b)
     return b
 
-def PrintColumn(column):
-    size = len(column)
-    for row in range(size):
-        print("%.20lf" % column[row])
 
-if __name__ == "__main__":
-    equation = ReadEquation()
-    solution = SolveEquation(equation)
+def PrintColumn(column):
+    for e in column:
+        print("{0:.6f}".format(e), end=' ')
+
+
+if __name__ == '__main__':
+    matrix = ReadData()
+    solution = SolveEquation(matrix)
     PrintColumn(solution)
     exit(0)
